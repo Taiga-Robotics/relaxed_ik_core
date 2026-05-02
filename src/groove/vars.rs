@@ -117,15 +117,13 @@ impl RelaxedIKVars {
 
         let weights = parse_weights(&settings["weights"]);
         let opt_opts = parse_optimizer_options(settings);
-        println!("RelaxedIK weights: {:?}", weights);
-        println!("RelaxedIK optimizer options: {:?}", opt_opts);
 
         RelaxedIKVars{robot, init_state: starting_config.clone(), xopt: starting_config.clone(),
             prev_state: starting_config.clone(), prev_state2: starting_config.clone(), prev_state3: starting_config.clone(),
             goal_positions: init_ee_positions.clone(), goal_quats: init_ee_quats.clone(), tolerances, init_ee_positions, init_ee_quats,
             weights, opt_opts}
     }
-
+    
     // for webassembly
     pub fn from_jsvalue( configs: VarsConstructorData, urdf: &str) -> Self  {
 

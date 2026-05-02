@@ -1,9 +1,6 @@
 use crate::groove::objective::*;
 use crate::groove::vars::RelaxedIKVars;
 
-/// Weights for relaxed_ik's objective terms. All values default to the
-/// originals from the paper. Override individual fields (e.g. zero out
-/// the smoothness terms to get sharp corners) without touching the rest.
 #[derive(Clone, Debug)]
 pub struct Weights {
     pub match_ee_position: f64,
@@ -31,9 +28,6 @@ impl Default for Weights {
     }
 }
 
-/// PANOC optimizer knobs. Lower `tolerance` = tighter convergence floor (at
-/// the cost of more iterations); raise `max_iter` if you set tolerance very
-/// tight so PANOC actually has the budget to reach it.
 #[derive(Clone, Debug)]
 pub struct OptimizerOptions {
     pub panoc_tolerance: f64,
@@ -43,8 +37,8 @@ pub struct OptimizerOptions {
 impl Default for OptimizerOptions {
     fn default() -> Self {
         Self {
-            panoc_tolerance: 1e-6,   // was 0.0005 — limited EE error to ~0.5mm
-            panoc_max_iter: 200,     // was 100
+            panoc_tolerance: 0.0005,
+            panoc_max_iter: 100,
         }
     }
 }
@@ -93,32 +87,28 @@ impl ObjectiveMaster {
             weight_priors.push(w.match_ee_orientation);
             objectives.push(Box::new(MatchEERotaDoF::new(i, 2)));
             weight_priors.push(w.match_ee_orientation);
+            // objectives.push(Box::new(EnvCollision::new(i)));
+            // weight_priors.push(1.0);
             num_dofs += chain_lengths[i];
         }
 
         for j in 0..num_dofs {
-            objectives.push(Box::new(EachJointLimits::new(j)));
-            weight_priors.push(w.joint_limits);
+            objectives.push(Box::new(EachJointLimits::new(j))); weight_priors.push(w.joint_limits);
         }
 
-        objectives.push(Box::new(MinimizeVelocity));
-        weight_priors.push(w.minimize_velocity);
-        objectives.push(Box::new(MinimizeAcceleration));
-        weight_priors.push(w.minimize_acceleration);
-        objectives.push(Box::new(MinimizeJerk));
-        weight_priors.push(w.minimize_jerk);
-        objectives.push(Box::new(MaximizeManipulability));
-        weight_priors.push(w.maximize_manipulability);
+        objectives.push(Box::new(MinimizeVelocity));   weight_priors.push(w.minimize_velocity);
+        objectives.push(Box::new(MinimizeAcceleration));    weight_priors.push(w.minimize_acceleration);
+        objectives.push(Box::new(MinimizeJerk));    weight_priors.push(w.minimize_jerk);
+        objectives.push(Box::new(MaximizeManipulability));    weight_priors.push(w.maximize_manipulability);
 
         for i in 0..num_chains {
             for j in 0..chain_lengths[i]-2 {
                 for k in j+2..chain_lengths[i] {
-                    objectives.push(Box::new(SelfCollision::new(0, j, k)));
-                    weight_priors.push(w.self_collision);
+                    objectives.push(Box::new(SelfCollision::new(0, j, k))); weight_priors.push(w.self_collision);
                 }
             }
         }
-
+        
         Self{objectives, num_chains, weight_priors, lite: false, finite_diff_grad: false}
     }
 
